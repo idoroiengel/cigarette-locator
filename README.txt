@@ -1,0 +1,1 @@
+A project to display cigarettes smoked on the map, to complement the Cigarette Counter written in Flutter.
