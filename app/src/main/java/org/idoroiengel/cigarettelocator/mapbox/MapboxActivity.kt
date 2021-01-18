@@ -97,6 +97,7 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
             locationComponent.setLocationComponentEnabled(true)
             locationComponent.setCameraMode(CameraMode.TRACKING)
             locationComponent.setRenderMode(RenderMode.COMPASS)
+            locationComponent.zoomWhileTracking(10.0)
             initLocationEngine()
         } else {
             permissionsManager = PermissionsManager(this)
