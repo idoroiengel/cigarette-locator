@@ -2,19 +2,18 @@ package org.idoroiengel.cigarettelocator.mapbox
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.res.ResourcesCompat
 import com.mapbox.android.core.location.*
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
-import com.mapbox.geojson.LineString
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions
@@ -24,8 +23,10 @@ import com.mapbox.mapboxsdk.maps.MapView
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.mapbox.mapboxsdk.maps.Style
-import com.mapbox.mapboxsdk.style.layers.CircleLayer
+import com.mapbox.mapboxsdk.style.expressions.Expression
+import com.mapbox.mapboxsdk.style.layers.Property
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory
+import com.mapbox.mapboxsdk.style.layers.SymbolLayer
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import org.idoroiengel.cigarettelocator.R
 import java.lang.ref.WeakReference
@@ -42,6 +43,9 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
 
     private val GEOJSON_SOURCE_ID: String = "cigarettes_source_id"
     private val CIGARETTES_LAYER_ID: String = "cigarettes_layer_id"
+    private val ICON_PROPERTY: String = "icon_property"
+    private val IC_SMOKING_GREEN_CIRCLE: String = "ic-launcher-background"
+    private val IC_SMOKING_RED_CIRCLE: String = "ic-launcher-foreground"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +74,32 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
             permissionsManager = PermissionsManager(this)
             permissionsManager?.requestLocationPermissions(this)
         }
+    }
+
+    private fun initSymbolRouteCoordinates(): List<Feature> {
+        val feature1: Feature = Feature.fromGeometry(
+            Point.fromLngLat(34.804, 32.077)
+        )
+        feature1.addStringProperty(ICON_PROPERTY, IC_SMOKING_RED_CIRCLE)
+        val feature2: Feature = Feature.fromGeometry(
+            Point.fromLngLat(34.810, 32.08)
+        )
+        feature2.addStringProperty(ICON_PROPERTY, IC_SMOKING_GREEN_CIRCLE)
+        val feature3: Feature = Feature.fromGeometry(
+            Point.fromLngLat(34.817, 32.085)
+        )
+        feature3.addStringProperty(ICON_PROPERTY, IC_SMOKING_RED_CIRCLE)
+        val feature4: Feature = Feature.fromGeometry(
+            Point.fromLngLat(34.823, 32.077)
+        )
+        feature4.addStringProperty(ICON_PROPERTY, IC_SMOKING_GREEN_CIRCLE)
+        val list: List<Feature> = arrayListOf(
+            feature1,
+            feature2,
+            feature3,
+            feature4
+        )
+        return list
     }
 
     private fun initRouteCoordinates() {
@@ -125,19 +155,42 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
 
     override fun onMapReady(mapboxMap: MapboxMap) {
         this.mapboxMap = mapboxMap
+
+
         mapboxMap.setStyle(
-            Style.OUTDOORS
-        ) { style ->
-            initRouteCoordinates()
+            Style.Builder().fromUri(Style.MAPBOX_STREETS)
+                .withImage(
+                    IC_SMOKING_GREEN_CIRCLE,
+                    ResourcesCompat.getDrawable(
+                        resources,
+                        R.drawable.smoking_green_circle,
+                        null
+                    )!!
+                )
+                .withImage(
+                    IC_SMOKING_RED_CIRCLE,
+                    ResourcesCompat.getDrawable(
+                        resources,
+                        R.drawable.smoking_red_circle,
+                        null
+                    )!!
+                )
+        )
+//        (
+//            Style.OUTDOORS
+//        )
+        { style ->
+
             style.addSource(
                 GeoJsonSource(
                     GEOJSON_SOURCE_ID,
                     FeatureCollection.fromFeatures(
-                        arrayOf(
-                            Feature.fromGeometry(
-                                LineString.fromLngLats(routeCoordinates!!)
-                            )
-                        )
+                        initSymbolRouteCoordinates()
+//                        arrayOf(
+//                            Feature.fromGeometry(
+//                                LineString.fromLngLats(routeCoordinates!!)
+//                            )
+//                        )
                     )
                 )
             )
@@ -155,14 +208,31 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
 //                    PropertyFactory.lineColor(getColor(R.color.purple_200))
 //                )
 //            )
+
+//            style.addLayer(
+//                CircleLayer(
+//                    CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID
+//                ).withProperties(
+//                    PropertyFactory.circleColor(Color.parseColor("#0000FF")),
+//                    PropertyFactory.circleRadius(20f),
+//                    PropertyFactory.circleStrokeColor(getColor(R.color.purple_200)),
+//                    PropertyFactory.circleStrokeWidth(4f)
+//                )
+//            )
             style.addLayer(
-                CircleLayer(
+                SymbolLayer(
                     CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID
                 ).withProperties(
-                    PropertyFactory.circleColor(Color.parseColor("#0000FF")),
-                    PropertyFactory.circleRadius(20f),
-                    PropertyFactory.circleStrokeColor(getColor(R.color.purple_200)),
-                    PropertyFactory.circleStrokeWidth(4f)
+                    PropertyFactory.iconImage(
+                        Expression.match(
+                            Expression.get(ICON_PROPERTY),
+                            Expression.literal(IC_SMOKING_GREEN_CIRCLE),
+                            Expression.stop(IC_SMOKING_RED_CIRCLE, IC_SMOKING_RED_CIRCLE),
+                            Expression.stop(IC_SMOKING_GREEN_CIRCLE, IC_SMOKING_GREEN_CIRCLE)
+                        )
+                    ),
+                    PropertyFactory.iconAllowOverlap(true),
+                    PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM)
                 )
             )
             enableLocationComponent(style)
