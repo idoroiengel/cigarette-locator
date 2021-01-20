@@ -2,6 +2,7 @@ package org.idoroiengel.cigarettelocator.mapbox
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
@@ -23,8 +24,7 @@ import com.mapbox.mapboxsdk.maps.MapView
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.mapbox.mapboxsdk.maps.Style
-import com.mapbox.mapboxsdk.style.layers.LineLayer
-import com.mapbox.mapboxsdk.style.layers.Property
+import com.mapbox.mapboxsdk.style.layers.CircleLayer
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import org.idoroiengel.cigarettelocator.R
@@ -78,10 +78,10 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
             Point.fromLngLat(34.804, 32.077)
         )
         (routeCoordinates as ArrayList<Point>).add(
-            Point.fromLngLat(34.810, 32.077)
+            Point.fromLngLat(34.810, 32.08)
         )
         (routeCoordinates as ArrayList<Point>).add(
-            Point.fromLngLat(34.817, 32.077)
+            Point.fromLngLat(34.817, 32.085)
         )
         (routeCoordinates as ArrayList<Point>).add(
             Point.fromLngLat(34.823, 32.077)
@@ -141,18 +141,28 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
                     )
                 )
             )
+//            style.addLayer(
+//                LineLayer(CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID).withProperties(
+//                    PropertyFactory.lineDasharray(
+//                        arrayOf(
+//                            0.01f,
+//                            2f
+//                        )
+//                    ),
+//                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+//                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+//                    PropertyFactory.lineWidth(5f),
+//                    PropertyFactory.lineColor(getColor(R.color.purple_200))
+//                )
+//            )
             style.addLayer(
-                LineLayer(CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID).withProperties(
-                    PropertyFactory.lineDasharray(
-                        arrayOf(
-                            0.01f,
-                            2f
-                        )
-                    ),
-                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
-                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
-                    PropertyFactory.lineWidth(5f),
-                    PropertyFactory.lineColor(getColor(R.color.purple_200))
+                CircleLayer(
+                    CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID
+                ).withProperties(
+                    PropertyFactory.circleColor(Color.parseColor("#0000FF")),
+                    PropertyFactory.circleRadius(20f),
+                    PropertyFactory.circleStrokeColor(getColor(R.color.purple_200)),
+                    PropertyFactory.circleStrokeWidth(4f)
                 )
             )
             enableLocationComponent(style)
