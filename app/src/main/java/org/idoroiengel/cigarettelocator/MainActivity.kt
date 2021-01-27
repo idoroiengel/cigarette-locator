@@ -1,14 +1,13 @@
 package org.idoroiengel.cigarettelocator
 
-import androidx.appcompat.app.AppCompatActivity
+import android.content.Intent
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import com.mapbox.mapboxsdk.Mapbox
-import com.mapbox.mapboxsdk.maps.MapView
-import com.mapbox.mapboxsdk.maps.Style
+import com.mapbox.mapboxsdk.geometry.LatLng
+import org.idoroiengel.cigarettelocator.mapbox.MapboxActivity
 
 class MainActivity : AppCompatActivity() {
-
-    private var mapView: MapView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,10 +15,16 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        mapView = findViewById(R.id.map_view)
-        mapView?.onCreate(savedInstanceState)
-        mapView?.getMapAsync { mapboxMap ->
-            mapboxMap.setStyle(Style.MAPBOX_STREETS)
-        }
+        val intent = Intent(applicationContext, MapboxActivity::class.java)
+        intent.putParcelableArrayListExtra(
+            getString(R.string.INTENT_EXTRA_FEATURE_LIST_FOR_MAPBOX),
+            arrayListOf(
+                LatLng(32.086, 34.789),
+                LatLng(32.086, 34.77),
+                LatLng(32.086, 34.77),
+                LatLng(32.086, 34.765),
+            )
+        )
+        startActivity(intent)
     }
 }

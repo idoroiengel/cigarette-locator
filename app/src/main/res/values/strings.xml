@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Cigarette Locator</string>
     <string name="mapbox_access_token">pk.eyJ1IjoiaWRvcm9pZW5nZWwiLCJhIjoiY2tpZXA2Nnp5MDE2czMxbXA3Y25yZDc2OCJ9.PvuPJinVM4wOTRPQH4kDMA</string>
+    
+    
+    <!-- Intent extras values-->
+    <string name="INTENT_EXTRA_FEATURE_LIST_FOR_MAPBOX">cigarettelocator.intent.extra.FEATURE_LIST_FOR_MAPBOX</string>
 </resources>

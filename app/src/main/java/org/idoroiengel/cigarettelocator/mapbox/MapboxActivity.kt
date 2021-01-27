@@ -2,6 +2,7 @@ package org.idoroiengel.cigarettelocator.mapbox
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
@@ -16,6 +17,7 @@ import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
+import com.mapbox.mapboxsdk.geometry.LatLng
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions
 import com.mapbox.mapboxsdk.location.modes.CameraMode
 import com.mapbox.mapboxsdk.location.modes.RenderMode
@@ -24,20 +26,18 @@ import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.mapbox.mapboxsdk.maps.Style
 import com.mapbox.mapboxsdk.style.expressions.Expression
-import com.mapbox.mapboxsdk.style.layers.Property
-import com.mapbox.mapboxsdk.style.layers.PropertyFactory
-import com.mapbox.mapboxsdk.style.layers.SymbolLayer
+import com.mapbox.mapboxsdk.style.layers.*
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import org.idoroiengel.cigarettelocator.R
 import java.lang.ref.WeakReference
-import java.util.*
+import java.util.function.Consumer
 
 class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListener {
     private var mapboxMap: MapboxMap? = null
     private var mapView: MapView? = null
-    private var routeCoordinates: MutableList<Point>? = null
     private var locationEngine: LocationEngine? = null
     private var permissionsManager: PermissionsManager? = null
+    private var featureListFromIntent: List<LatLng>? = null
 
     private var callback: MapboxActivityLocationCallback = MapboxActivityLocationCallback(this)
 
@@ -55,6 +55,9 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
         mapView = findViewById(R.id.map_view)
         mapView?.onCreate(savedInstanceState)
         mapView?.getMapAsync(this)
+
+        featureListFromIntent =
+            intent.getParcelableArrayListExtra(getString(R.string.INTENT_EXTRA_FEATURE_LIST_FOR_MAPBOX))
     }
 
     private fun enableLocationComponent(style: Style) {
@@ -77,45 +80,17 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
     }
 
     private fun initSymbolRouteCoordinates(): List<Feature> {
-        val feature1: Feature = Feature.fromGeometry(
-            Point.fromLngLat(34.804, 32.077)
+        val featureListToDrawOnMap: MutableList<Feature> = mutableListOf()
+        featureListFromIntent?.forEach(
+            Consumer { latLng ->
+                featureListToDrawOnMap.add(
+                    Feature.fromGeometry(
+                        Point.fromLngLat(latLng.longitude, latLng.latitude)
+                    )
+                )
+            }
         )
-        feature1.addStringProperty(ICON_PROPERTY, IC_SMOKING_RED_CIRCLE)
-        val feature2: Feature = Feature.fromGeometry(
-            Point.fromLngLat(34.810, 32.08)
-        )
-        feature2.addStringProperty(ICON_PROPERTY, IC_SMOKING_GREEN_CIRCLE)
-        val feature3: Feature = Feature.fromGeometry(
-            Point.fromLngLat(34.817, 32.085)
-        )
-        feature3.addStringProperty(ICON_PROPERTY, IC_SMOKING_RED_CIRCLE)
-        val feature4: Feature = Feature.fromGeometry(
-            Point.fromLngLat(34.823, 32.077)
-        )
-        feature4.addStringProperty(ICON_PROPERTY, IC_SMOKING_GREEN_CIRCLE)
-        val list: List<Feature> = arrayListOf(
-            feature1,
-            feature2,
-            feature3,
-            feature4
-        )
-        return list
-    }
-
-    private fun initRouteCoordinates() {
-        routeCoordinates = ArrayList()
-        (routeCoordinates as ArrayList<Point>).add(
-            Point.fromLngLat(34.804, 32.077)
-        )
-        (routeCoordinates as ArrayList<Point>).add(
-            Point.fromLngLat(34.810, 32.08)
-        )
-        (routeCoordinates as ArrayList<Point>).add(
-            Point.fromLngLat(34.817, 32.085)
-        )
-        (routeCoordinates as ArrayList<Point>).add(
-            Point.fromLngLat(34.823, 32.077)
-        )
+        return featureListToDrawOnMap
     }
 
     override fun onResume() {
@@ -153,91 +128,80 @@ class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListe
         mapView!!.onSaveInstanceState(outState)
     }
 
+    fun addLineLayerToMap(style: Style) {
+        style.addLayer(
+            LineLayer(CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID).withProperties(
+                PropertyFactory.lineDasharray(
+                    arrayOf(
+                        0.01f,
+                        2f
+                    )
+                ),
+                PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                PropertyFactory.lineWidth(5f),
+                PropertyFactory.lineColor(getColor(R.color.purple_200))
+            )
+        )
+    }
+
+    fun addCircleLayerToMap(style: Style) {
+        style.addLayer(
+            CircleLayer(
+                CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID
+            ).withProperties(
+                PropertyFactory.circleColor(Color.parseColor("#0000FF")),
+                PropertyFactory.circleRadius(20f),
+                PropertyFactory.circleStrokeColor(getColor(R.color.purple_200)),
+                PropertyFactory.circleStrokeWidth(4f)
+            )
+        )
+    }
+
+    private fun addSymbolLayerToMap(style: Style) {
+        style.addLayer(
+            SymbolLayer(
+                CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID
+            ).withProperties(
+                PropertyFactory.iconImage(
+                    Expression.match(
+                        Expression.get(ICON_PROPERTY),
+                        Expression.literal(IC_SMOKING_GREEN_CIRCLE),
+                        Expression.stop(IC_SMOKING_RED_CIRCLE, IC_SMOKING_RED_CIRCLE),
+                        Expression.stop(IC_SMOKING_GREEN_CIRCLE, IC_SMOKING_GREEN_CIRCLE)
+                    )
+                ),
+                PropertyFactory.iconAllowOverlap(true),
+                PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM)
+            )
+        )
+    }
+
     override fun onMapReady(mapboxMap: MapboxMap) {
         this.mapboxMap = mapboxMap
-
-
         mapboxMap.setStyle(
             Style.Builder().fromUri(Style.MAPBOX_STREETS)
                 .withImage(
                     IC_SMOKING_GREEN_CIRCLE,
-                    ResourcesCompat.getDrawable(
-                        resources,
-                        R.drawable.smoking_green_circle,
-                        null
-                    )!!
+                    ResourcesCompat.getDrawable(resources, R.drawable.smoking_green_circle, null)!!
                 )
                 .withImage(
                     IC_SMOKING_RED_CIRCLE,
-                    ResourcesCompat.getDrawable(
-                        resources,
-                        R.drawable.smoking_red_circle,
-                        null
-                    )!!
+                    ResourcesCompat.getDrawable(resources, R.drawable.smoking_red_circle, null)!!
                 )
         )
-//        (
-//            Style.OUTDOORS
-//        )
         { style ->
-
             style.addSource(
                 GeoJsonSource(
                     GEOJSON_SOURCE_ID,
                     FeatureCollection.fromFeatures(
                         initSymbolRouteCoordinates()
-//                        arrayOf(
-//                            Feature.fromGeometry(
-//                                LineString.fromLngLats(routeCoordinates!!)
-//                            )
-//                        )
                     )
                 )
             )
-//            style.addLayer(
-//                LineLayer(CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID).withProperties(
-//                    PropertyFactory.lineDasharray(
-//                        arrayOf(
-//                            0.01f,
-//                            2f
-//                        )
-//                    ),
-//                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
-//                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
-//                    PropertyFactory.lineWidth(5f),
-//                    PropertyFactory.lineColor(getColor(R.color.purple_200))
-//                )
-//            )
-
-//            style.addLayer(
-//                CircleLayer(
-//                    CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID
-//                ).withProperties(
-//                    PropertyFactory.circleColor(Color.parseColor("#0000FF")),
-//                    PropertyFactory.circleRadius(20f),
-//                    PropertyFactory.circleStrokeColor(getColor(R.color.purple_200)),
-//                    PropertyFactory.circleStrokeWidth(4f)
-//                )
-//            )
-            style.addLayer(
-                SymbolLayer(
-                    CIGARETTES_LAYER_ID, GEOJSON_SOURCE_ID
-                ).withProperties(
-                    PropertyFactory.iconImage(
-                        Expression.match(
-                            Expression.get(ICON_PROPERTY),
-                            Expression.literal(IC_SMOKING_GREEN_CIRCLE),
-                            Expression.stop(IC_SMOKING_RED_CIRCLE, IC_SMOKING_RED_CIRCLE),
-                            Expression.stop(IC_SMOKING_GREEN_CIRCLE, IC_SMOKING_GREEN_CIRCLE)
-                        )
-                    ),
-                    PropertyFactory.iconAllowOverlap(true),
-                    PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM)
-                )
-            )
+            addSymbolLayerToMap(style)
             enableLocationComponent(style)
         }
-
     }
 
     override fun onExplanationNeeded(permissionsToExplain: List<String?>?) {
