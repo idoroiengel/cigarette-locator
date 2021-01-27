@@ -32,6 +32,11 @@ import org.idoroiengel.cigarettelocator.R
 import java.lang.ref.WeakReference
 import java.util.function.Consumer
 
+/**
+ * @author idoroiengel
+ * This activity displays a map with symbols or other shapes as desired. One should start this activity via an Intent, using the [R.string.INTENT_EXTRA_FEATURE_LIST_FOR_MAPBOX]
+ * to load the data that will be displayed in [MapboxActivity]
+ */
 class MapboxActivity : AppCompatActivity(), OnMapReadyCallback, PermissionsListener {
     private var mapboxMap: MapboxMap? = null
     private var mapView: MapView? = null
